@@ -878,17 +878,35 @@
             }
         }
 
+        // --- LƯU TÀI KHOẢN TRÊN TRÌNH DUYỆT ---
+        // Lưu ý: đây là web tĩnh GitHub Pages. Dữ liệu localStorage chỉ
+        // tồn tại trên trình duyệt/thiết bị hiện tại, không phải cơ sở dữ liệu online.
+        function getSavedAccount() {
+            try {
+                return JSON.parse(localStorage.getItem('napGameAccount') || 'null');
+            } catch (e) {
+                return null;
+            }
+        }
+
         function handleRegister(event) {
             event.preventDefault();
             const user = document.getElementById('regUser').value.trim();
-            const pass = document.getElementById('regPass').value.trim();
+            const pass = document.getElementById('regPass').value;
 
             if (!user || !pass) {
                 alert("Vui lòng nhập đầy đủ thông tin!");
                 return;
             }
 
-            alert("🎉 Đăng ký tài khoản thành công! Hệ thống sẽ chuyển sang trang Đăng nhập.");
+            // Demo trên web tĩnh: lưu tài khoản vào trình duyệt để dùng lại lần sau.
+            // Không nên dùng cách này cho website thật vì mật khẩu được lưu ở máy người dùng.
+            localStorage.setItem('napGameAccount', JSON.stringify({
+                username: user,
+                password: pass
+            }));
+
+            alert("🎉 Đăng ký thành công! Tài khoản đã được lưu trên trình duyệt này.");
             document.getElementById('loginUser').value = user;
             document.getElementById('loginPass').value = pass;
             switchAuthTab('login');
@@ -898,16 +916,36 @@
         function handleLogin(event) {
             event.preventDefault();
             const user = document.getElementById('loginUser').value.trim();
-            const pass = document.getElementById('loginPass').value.trim();
+            const pass = document.getElementById('loginPass').value;
+            const saved = getSavedAccount();
 
             if (!user || !pass) {
                 alert("Vui lòng điền tài khoản và mật khẩu!");
                 return;
             }
 
+            if (!saved || saved.username !== user || saved.password !== pass) {
+                alert("❌ Tài khoản hoặc mật khẩu không đúng trên trình duyệt này!");
+                return;
+            }
+
+            // Lưu tài khoản đăng nhập để lần sau tự điền.
+            localStorage.setItem('napGameLastUser', user);
+
             alert(`✅ Đăng nhập thành công! Chào mừng bạn: ${user}`);
             document.getElementById('authModal').style.display = 'none';
         }
+
+        // Tự điền tài khoản đã đăng ký/đăng nhập ở lần trước.
+        document.addEventListener('DOMContentLoaded', function () {
+            const saved = getSavedAccount();
+            const lastUser = localStorage.getItem('napGameLastUser');
+
+            if (saved) {
+                document.getElementById('loginUser').value = lastUser || saved.username;
+                document.getElementById('loginPass').value = saved.password;
+            }
+        });
 
         // --- TÍCH HỢP TRÌNH PHÁT NHẠC YOUTUBE ---
         let player;
@@ -1037,8 +1075,8 @@
         function confirmPayment() {
             const timeElapsed = (Date.now() - checkoutTime) / 1000; // Tính số giây từ lúc bấm thanh toán
 
-            // Điều kiện báo lỗi: Chưa thoát khỏi trang web HOẶC thời gian quay lại quá nhanh (< 3 giây)
-            if (!hasLeftPage || timeElapsed < 3) {
+            // Điều kiện báo lỗi: Chưa thoát khỏi trang web HOẶC thời gian quay lại quá nhanh (< 2 giây)
+            if (!hasLeftPage || timeElapsed < 2) {
                 alert("❌ Lỗi xác nhận: Bạn chưa thực hiện chuyển khoản hoặc chưa rời khỏi trang web để thanh toán! Vui lòng mở app ngân hàng chuyển tiền rồi quay lại.");
                 return;
             }
